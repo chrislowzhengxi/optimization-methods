@@ -1,0 +1,455 @@
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{parskip}
+\usepackage[margin=.85in]{geometry}
+\usepackage{tikz}
+\usepackage{titling}
+
+ % move title upward
+
+\title{15.C57 Optimization Methods HW3}
+\author{Chris Low}
+\date{} % removes the date
+
+\begin{document}
+
+\maketitle
+
+\section*{Problem 1}
+
+\subsection*{(a)}
+
+\textbf{True.}
+
+One valid inequality is
+
+$$
+\sum_{i=1}^n x_i - (k-1) \leq (n-k+1)y.
+$$
+
+Let $S = \sum_{i=1}^n x_i$, the number of selected projects.
+
+If $S \leq k-1$, then $
+S-(k-1) \leq 0,
+$ 
+so the constraint is satisfied when $y=0$ or $y=1$. Thus, $y$ is not forced to be 1 when fewer than $k$ projects are selected.
+
+If $S \geq k$, then $
+S-(k-1) \geq 1.
+$
+Therefore, $y=0$ would violate the constraint, so since $y \in \{0,1\}$, we must have $y=1$.
+
+Finally, when $y=1$, the constraint becomes $
+S-(k-1) \leq n-k+1,
+$
+
+which is equivalent to $
+S \leq n.
+$ This always holds, so the constraint does not exclude any valid selection when $y=1$. Since $n$ is the largest possible value of $S$, $n-k+1$ is the smallest, and therefore tightest, coefficient of $y$ that makes the constraint valid.
+
+\vspace{5mm}
+\subsection*{(b)}
+
+\textbf{False.}
+
+An integral polyhedron is a polyhedron whose extreme points are all integral. An integer optimization formulation is ideal if its linear optimization relaxation defines an integral polyhedron. Thus, if the relaxation has a finite optimum, there exists an optimal extreme point that is integral. However, this does not imply that every optimal solution is integral.
+
+For example, consider
+
+$$
+\max \; 0x
+$$
+
+subject to $
+x \in \{0,1\}.
+$
+
+Its linear relaxation is $
+0 \leq x \leq 1.
+$ The extreme points are $x=0$ and $x=1$, which are both integral, so the formulation is ideal. However, every point in $[0,1]$ is optimal since the objective value is always $0$. In particular, $
+x=\frac{1}{2}
+$ is an optimal solution of the relaxation but is not integral. Therefore, not every optimal solution of an ideal formulation's relaxation must satisfy the integrality requirements.
+
+
+
+\vspace{5mm}
+\subsection*{(c)}
+
+\textbf{False.}
+
+Having more constraints does not necessarily increase the total computational time. More constraints can produce a stronger linear optimization relaxation by eliminating fractional solutions that would be feasible under a weaker relaxation. This gives tighter bounds, which can reduce the number of nodes that must be explored in branch-and-bound.
+
+For example, in the facility location problem from lecture, the aggregate facility location (AFL) formulation uses
+
+$$
+\sum_{i=1}^{m} x_{ij} \leq m y_j, \qquad \forall j,
+$$
+
+while the facility location (FL) formulation uses the more restrictive constraints
+
+$$
+x_{ij} \leq y_j, \qquad \forall i,j.
+$$
+
+These formulations are equivalent when the variables are integral, but their linear relaxations differ. For example, suppose $m=10$ and $y_j=0.2$. AFL only requires $
+\sum_{i=1}^{10} x_{ij} \leq 2,
+$ so it could allow $x_{1j}=x_{2j}=1$. In contrast, FL requires $
+x_{ij} \leq 0.2 \quad \forall i,
+$ so this fractional solution would not be feasible under FL. Thus, $
+P_{FL} \subseteq P_{AFL},
+$ and FL has the stronger relaxation. For this minimization problem,
+
+$$
+Z_{LO}(AFL) \leq Z_{LO}(FL) \leq Z_{IO}(AFL)=Z_{IO}(FL).
+$$
+
+Therefore, FL provides a tighter lower bound on the integer optimum. In branch-and-bound, tighter lower bounds can allow more nodes to be pruned without further exploration. Thus, despite having more constraints, FL can require less total computational time.
+
+
+
+\vspace{5mm}
+\subsection*{(d)}
+
+\textbf{True.}
+
+Let $x^*$ be an optimal solution of the linear optimization relaxation, and let $v$ be its objective value. Since the LO relaxation has a larger feasible region than the MIO problem, its optimal value provides a lower bound on the MIO optimum:
+
+$$
+v \leq Z_{MIO}.
+$$
+
+Now suppose $x^*$ is integral in all variables required to be integer. Then $x^*$ is also a feasible solution to the MIO problem with objective value $v$. Since $Z_{MIO}$ is the minimum over all MIO-feasible solutions,
+
+$$
+Z_{MIO} \leq v.
+$$
+
+Therefore, $
+v \leq Z_{MIO} \leq v,
+$ which implies $
+Z_{MIO}=v.
+$
+
+Thus, $x^*$ is also an optimal solution of the mixed-integer problem.
+
+
+\newpage
+\subsection*{(e)}
+
+\textbf{False.}
+
+For a minimization problem, the LO relaxation at a node provides a lower bound on any integer solution that could be found by branching from that node. Suppose the LO solution is fractional, for example, $
+x^* = (1, 0.5, 0, 1),
+$ but its objective value is equal to the value of the incumbent integer solution: $
+Z_{LO} = Z_{\text{inc}} = 100.
+$ Although $x^*$ is not integer-feasible because one of its variables equals $0.5$, any integer solution obtained by branching from this node must have an objective value at least $100$, essentially: 
+
+$$
+Z_{\text{integer}} \geq Z_{LO} = 100.
+$$
+
+Since we already have an integer-feasible solution with objective value $100$, branching can at best produce another solution with the same value and cannot improve the incumbent. Therefore, the node can be pruned by bound even though its LO solution is fractional.
+
+\vspace{7mm}
+
+\section*{Problem 2}
+
+\subsection*{2(a)}
+
+Define the decision variables: 
+
+
+$
+x_t \geq 0
+$ as the amount of supplies delivered in period $t$,
+
+$
+s_t \geq 0
+$ as the amount of supplies stored at the end of period $t$, and
+
+$
+y_t =
+\begin{cases}
+1, & \text{if a convoy is dispatched in period } t,\\
+0, & \text{otherwise.}
+\end{cases}
+$
+
+The integer optimization model is
+
+\[
+\min \sum_{t=1}^{T} \left(p_t x_t + h_t s_t + c_t y_t\right)
+\]
+
+subject to
+
+\[
+s_t = s_{t-1} + x_t - d_t,
+\qquad t=1,\ldots,T,
+\]
+
+\[
+x_t \leq M_t y_t,
+\qquad t=1,\ldots,T,
+\]
+
+\[
+s_0=0,
+\]
+
+\[
+x_t \geq 0,\qquad s_t \geq 0,
+\qquad t=1,\ldots,T,
+\]
+
+\[
+y_t\in\{0,1\},
+\qquad t=1,\ldots,T,
+\]
+
+where
+
+\[
+M_t=\sum_{\tau=t}^{T}d_\tau.
+\]
+
+The inventory balance constraint states that the supplies remaining at the end of period $t$ equal the supplies left from the previous period ($s_{t-1}$) plus the new delivery ($x_t$), minus the demand satisfied in period $t$ ($d_t$). 
+
+The constraint $x_t\leq M_ty_t$ ensures that supplies can only be delivered if a convoy is dispatched, otherwise $x_t = 0$ when $y_t = 0$. We choose $
+M_t=\sum_{\tau=t}^{T}d_\tau
+$ because this is the total demand remaining from period $t$ through period $T$. There is no need to deliver more than the total remaining demand, so $M_t$ provides a valid upper bound on the amount that could be delivered in period $t$ while keeping the formulation relatively tight.
+
+Finally, $s_t\geq0$ ensures that demand is fully satisfied in every period and cannot be backlogged.
+
+\vspace{5mm}
+
+\subsection*{(b)}
+
+Introduce the variable $u_t \geq 0$ to represent the amount of unmet demand in period $t$. Since demand must be fully met in the final period, $u_T=0$.
+
+The inventory balance becomes
+
+\[
+s_t=s_{t-1}+x_t-d_t+u_t,
+\qquad t=1,\ldots,T-1.
+\]
+
+The $+u_t$ term appears because only the served portion of demand, $d_t-u_t$, draws down inventory. Since unmet demand is lost, $u_t$ does not appear in the balance equation for the next period.
+
+We also require
+
+\[
+0\leq u_t\leq d_t,
+\qquad t=1,\ldots,T-1,
+\]
+
+which ensures that the amount of unmet demand cannot exceed the actual demand in period $t$.
+
+Thus, the complete model is
+
+\[
+\min
+\left[
+\sum_{t=1}^{T}
+\left(p_t x_t+h_t s_t+c_t y_t\right)
++
+\sum_{t=1}^{T-1}b_tu_t
+\right]
+\]
+
+subject to
+
+\[
+s_t=s_{t-1}+x_t-d_t+u_t,
+\qquad t=1,\ldots,T-1,
+\]
+
+\[
+s_T=s_{T-1}+x_T-d_T,
+\]
+
+\[
+0\leq u_t\leq d_t,
+\qquad t=1,\ldots,T-1,
+\]
+
+\[
+x_t\leq M_ty_t,
+\qquad t=1,\ldots,T,
+\]
+
+\[
+s_0=0,
+\]
+
+\[
+x_t\geq0,\qquad s_t\geq0,
+\qquad t=1,\ldots,T,
+\]
+
+\[
+y_t\in\{0,1\},
+\qquad t=1,\ldots,T.
+\]
+
+\newpage 
+
+\subsection*{(c)}
+
+Starting from the model in part (b), add the constraint
+
+\[
+\sum_{t=1}^{T} y_t \leq 5,
+\]
+
+which ensures that convoys are dispatched in at most five periods.
+
+To prevent convoys from being dispatched in two consecutive periods, add
+
+\[
+y_t+y_{t+1}\leq1,
+\qquad t=1,\ldots,T-1.
+\]
+
+The second constraint prevents both $y_t$ and $y_{t+1}$ from being equal to 1 at the same time. Therefore, if a convoy is dispatched in period $t$, no convoy can be dispatched in period $t+1$.
+
+
+
+\vspace{7mm}
+
+\section*{Problem 3}
+
+Let $
+m=\frac{n-1}{2}.
+$
+
+Since $n$ is odd, the quantity $
+2\sum_{i=1}^{n}x_i
+$ is even for every integer-feasible solution. Therefore, in order for
+
+\[
+2\sum_{i=1}^{n}x_i+x_{n+1}=n
+\]
+
+to equal the odd number $n$, we must have $ 
+x_{n+1}=1.
+$
+Thus, the integer optimal value is $
+Z_{IO}=1.
+$
+
+For example, if $n=5$, then $m=(5-1)/2=2$. The constraint is $
+2x_1+2x_2+2x_3+2x_4+2x_5+x_6=5.
+$ The first five terms always sum to an even number when the variables are binary, so $x_6$ must equal $1$.
+
+Now consider the LO relaxation, where the variables may take values between $0$ and $1$. If we set $
+x_{n+1}=0, $ then the constraint becomes $
+\sum_{i=1}^{n}x_i=\frac{n}{2}.
+$
+
+Since fractional values are allowed, this is feasible. For example, when $n=5$,
+
+\[
+x_1=1,\qquad x_2=1,\qquad x_3=0.5,\qquad x_4=x_5=0
+\]
+
+gives $
+x_1+x_2+x_3+x_4+x_5=2.5=\frac{5}{2}.
+$
+
+Therefore, the LO relaxation can achieve $
+x_{n+1}=0,
+$  so $
+Z_{LO}=0.
+$
+
+Now consider any node in the branch-and-bound tree. Let $a$ be the number of variables among $x_1,\ldots,x_n$ that have been fixed to $1$, and let $b$ be the number that have been fixed to $0$. Thus, $a+b$ is the total number of variables fixed by branching so far.
+
+Suppose
+
+\[
+a+b\leq m=\frac{n-1}{2}.
+\]
+
+If we keep $x_{n+1}=0$, we still need $
+\sum_{i=1}^{n}x_i=\frac{n}{2}.
+$ 
+
+Since $a$ variables have already been fixed to $1$, the remaining free variables must sum to
+
+\[
+\frac{n}{2}-a.
+\]
+
+For example, when $n=5$, suppose we have branched twice and obtained $
+x_1=1, x_2=0.
+$
+
+Then $a=1$, $b=1$, and $m=2$. The remaining variables must satisfy
+
+\[
+x_3+x_4+x_5=\frac{5}{2}-1=1.5.
+\]
+
+This is possible in the LO relaxation, for example by choosing $
+x_3=1, \quad x_4=0.5, \quad x_5=0.
+$
+
+In general, there are
+
+\[
+n-a-b
+\]
+
+free variables remaining, each of which can take a value between $0$ and $1$. Therefore, their maximum possible sum is $n-a-b$. The required sum is achievable because
+
+\[
+\frac{n}{2}-a\leq n-a-b.
+\]
+
+This is equivalent to $
+b\leq\frac{n}{2},
+$ which holds because
+
+\[
+b\leq m=\frac{n-1}{2}<\frac{n}{2}.
+\]
+
+Therefore, at every node where at most
+$ m=\frac{n-1}{2} $ variables have been fixed, the LO relaxation can still keep $
+x_{n+1}=0
+$ and hence $
+Z_{LO}=0.
+$ 
+
+Furthermore, we note that $
+\frac{n}{2}-a
+$ is not an integer because $n$ is odd and $a$ is an integer. Therefore, at least one of the remaining variables must be fractional. For example, when $n=5$, the required remaining sum may be $2.5$, $1.5$, or $0.5$, so at least one variable must take a fractional value.
+
+Thus, these nodes cannot be pruned by integrality. They also cannot be pruned by bound because 
+
+$ 
+Z_{LO}=0<Z_{IO}=1.
+$ 
+
+Therefore, every node through depth $
+m=\frac{n-1}{2} $ must continue branching.
+
+Each branch produces two children, so at depth $m$ there are  $2^m $ nodes. Substituting $
+m=\frac{n-1}{2},
+$ we obtain
+
+\[
+\boxed{2^m=2^{(n-1)/2}.}
+\]
+
+For example, when $n=5$, we have $m=2$, so the first two branching levels produce $
+2^2=4 $ nodes at depth $2$, and none of these nodes can have been pruned earlier by bound or integrality.
+
+Since $
+2^{(n-1)/2} $ grows exponentially with $n$, branch-and-bound requires an exponential number of subproblems. \qed
+
+\end{document}
